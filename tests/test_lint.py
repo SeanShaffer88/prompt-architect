@@ -92,6 +92,15 @@ class DocumentLintTests(unittest.TestCase):
     def test_bad_version_is_reported(self):
         self.assertIn("PA003", rules(self.lint_text(BROKEN_SPEC)))
 
+    def test_guide_type_is_accepted(self):
+        doc = GOOD_SPEC.replace("type: blueprint", "type: guide")
+        self.assertNotIn("PA002", rules(self.lint_text(doc)))
+
+    def test_unknown_type_is_rejected(self):
+        doc = GOOD_SPEC.replace("type: blueprint", "type: whitepaper")
+        self.assertIn("PA002", rules(self.lint_text(doc)))
+
+
     def test_non_spec_markdown_is_not_required_to_have_front_matter(self):
         self.assertEqual(self.lint_text("# Just notes\n\nSome prose.\n", "notes.md"), [])
 
