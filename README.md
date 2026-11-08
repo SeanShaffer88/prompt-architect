@@ -13,6 +13,7 @@ Prompts are not conversation. They are **API contracts** against a probabilistic
 - [The 5-Component Prompt Architecture](#️-the-5-component-prompt-architecture)
 - [Prompt Engineering Patterns](#-prompt-engineering-patterns)
 - [Task-Specific Blueprints](#-task-specific-blueprints)
+- [The Harness](#-the-harness)
 - [The Architect Loop](#-the-architect-loop)
 - [Anti-Patterns & Failure Modes](#-anti-patterns--failure-modes)
 - [Repository Layout](#-repository-layout)
@@ -157,6 +158,45 @@ Each blueprint ships with its variable table, a filled worked example, failure m
 
 ---
 
+## 🧰 The Harness
+
+The framework ships as a zero-dependency Python package, so the rules above are executable rather than aspirational.
+
+```bash
+python -m prompt_architect lint .                        # audit the docs against this repo's own rules
+python -m prompt_architect compose specs/log-normalize.json --variant v3
+python -m prompt_architect compose specs/log-normalize.json --all
+python -m prompt_architect eval benchmarks/suites/log-normalize.json \
+  --run benchmarks/runs/2026-11-08.log-normalize.v3.json
+```
+
+`pip install -e .` exposes the same interface as `prompt-architect`.
+
+### What each command enforces
+
+| Command | Enforces | Fails on |
+|---|---|---|
+| `lint` | front-matter shape, the 5 component sections, paired negative constraints, fallback protocol, deterministic container, acceptance checklist, relative links | any `PA*` error (1) |
+| `compose` | a spec renders reproducibly; `--check` diffs against `specs/golden/` | any drift from the golden prompt (1) |
+| `eval` | the ship bar: schema 4 on every case, no dimension below 3, no injection compliance | any blocker (1) |
+
+### The spec and the variant ladder
+
+A spec is the machine-readable form of a blueprint (`specs/log-normalize.json`): role, context, objective, must/must-not constraints, fallback table, exemplars, and the output container. `compose` renders it at four levels:
+
+| Variant | Adds | Purpose |
+|---|---|---|
+| `v0` | — | The zero-shot baseline you are trying to beat |
+| `v1` | 5 components, positive rules | Structured, but nothing forbidden and nothing specified for the unknown |
+| `v2` | negative rules + exemplars | Patterned: fences disappear, the null policy lands |
+| `v3` | fallback protocol, payload guard, precedence, byte-level container | Hardened: the version that passes the ship bar |
+
+Exactly one class of enforcement changes per step, which is what makes a score movement attributable to a layer instead of to luck.
+
+### Offline by design
+
+`eval` never calls a model. You record raw outputs once — with whatever client you use — and commit the run file; CI re-grades it deterministically. See [benchmarks/runs/README.md](benchmarks/runs/README.md) for the record format and the provenance of the committed fixtures.
+
 ## 🔁 The Architect Loop
 
 Do not write a prompt once. Run it like a build pipeline:
@@ -191,6 +231,16 @@ Do not write a prompt once. Run it like a build pipeline:
 
 ```text
 ├── README.md                     # Master philosophy and architecture guide
+├── pyproject.toml                # Packaging for the harness (no dependencies)
+├── prompt_architect/             # Zero-dependency CLI: lint / compose / eval
+│   ├── cli.py                    # Command surface and exit codes
+│   ├── spec.py                   # 5-component composition, v0-v3 ladder
+│   ├── lint.py                   # PA001-PA010 conformance rules
+│   ├── evaluate.py               # T1-T6 grading, rubric, ship bar
+│   └── frontmatter.py            # Minimal YAML front-matter reader
+├── specs/                        # Machine-readable prompt specs
+│   ├── log-normalize.json        # The worked example, as data
+│   └── golden/                   # Committed renders; --check detects drift
 ├── blueprints/                   # Domain-specific templates
 │   ├── code-generation.md        # Code refactoring & implementation blueprints
 │   ├── data-extraction.md        # Schema normalization & parsing blueprints
@@ -199,8 +249,12 @@ Do not write a prompt once. Run it like a build pipeline:
 │   ├── chain-of-thought.md       # Step-by-step reasoning workflows
 │   ├── few-shot-calibration.md   # In-context learning examples
 │   └── constraint-enforcement.md # Multi-layered negative & positive constraints
-└── benchmarks/                   # Test suites and output validation logs
-    └── evaluation-matrix.md      # Zero-shot vs. engineered prompt comparison
+├── benchmarks/                   # Test suites and output validation logs
+│   ├── evaluation-matrix.md      # Zero-shot vs. engineered prompt comparison
+│   ├── suites/log-normalize.json # T1-T6 fixtures and expectations
+│   └── runs/                     # Recorded outputs, one file per run
+├── tests/                        # 62 unit tests over the harness
+└── .github/workflows/ci.yml      # Lint, goldens, ship bar, discrimination guard
 ```
 
 ---
@@ -243,10 +297,17 @@ Scoring is 0–4 per dimension (see rubric), with results logged per model and d
 
 ## 🤝 Contributing
 
+```bash
+python -m unittest discover -s tests -t .   # harness tests
+python -m prompt_architect lint .           # docs must satisfy the repo's own rules
+python -m prompt_architect compose specs/log-normalize.json --variant v3 --check
+```
+
 - Match the front-matter schema and section order.
 - Show a real input and a real output; no fabricated "example" placeholders inside examples.
 - Any new constraint must name the failure it prevents.
 - Include at least one adversarial case in your examples.
+- Changing a prompt's behavior requires a version bump, a re-rendered golden file, and an appended run in `benchmarks/runs/`.
 
 ## 📄 License
 
