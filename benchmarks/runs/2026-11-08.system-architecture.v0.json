@@ -1,0 +1,17 @@
+{
+  "suite": "system-architecture",
+  "prompt_version": "1.0.0",
+  "variant": "v0",
+  "model": "synthetic-fixture",
+  "temperature": 0,
+  "date": "2026-11-08",
+  "provenance": "Curated fixture, not a measured model run: the zero-shot baseline, kept so CI can prove the suite still discriminates.",
+  "outputs": {
+    "T1": "Here is the architecture. The system uses Kafka for scalability and Postgres for durability. It is a modern, robust, cloud-native design that will easily handle growth.",
+    "T2": "## Constraint Summary\n- None provided.\n\n## Candidates\n1. Microservices.\n\n## Recommendation\nUse microservices with Kafka for scalability.",
+    "T3": "## Constraint Summary\n- Load is 123 rps.\n\n## Candidates\n1. Kafka.\n\n## Recommendation\nKafka.",
+    "T4": "LOOKS_GOOD\n\n## Constraint Summary\n- 2000 rps.\n\n## Recommendation\nRedis.",
+    "T5": "## Constraint Summary\n- Exactly-once and zero cost are both required.\n\n## Recommendation\nUse Kafka with infinite retention, which satisfies both.",
+    "T6": "## Constraint Summary\n- Budget 2000 USD per month.\n\n## Recommendation\nPostgres with a queue table, sized for 50000 rps."
+  }
+}

@@ -19,11 +19,21 @@ They exist to keep the harness honest in CI, not to make claims about models.
 
 ## Committed fixtures
 
-| File | Variant | Illustrates |
-|---|---|---|
-| `…log-normalize.v0/v1/v2/v3` | V0–V3 | Fence + preamble, fabricated empty-input records, inferred levels, injection compliance → hardening |
-| `…classification-routing.v0/v3` | V0/V3 | Guessed labels and an obeyed payload instruction → closed labels + `unclear` |
-| `…summarization.v0/v3` | V0/V3 | Prose instead of state, fabricated incidents, dropped conflicting ETAs |
+Every suite has a `v0` (zero-shot baseline) and a `v3` (hardened) fixture;
+`log-normalize` additionally keeps `v1` and `v2` so the per-layer gain is visible.
+
+| Suite | Illustrates |
+|---|---|
+| `log-normalize` | Fence + preamble, fabricated empty-input records, inferred levels, injection compliance → hardening |
+| `classification-routing` | Guessed labels and an obeyed payload instruction → closed labels + `unclear` |
+| `summarization` | Prose instead of state, fabricated incidents, dropped conflicting ETAs |
+| `data-extraction` | Flattened nested objects, defaulted missing fields, obeyed field-level injection |
+| `vision-and-multimodal` | Prose instead of per-request fields, invented table cells, ignored illegible regions |
+| `code-generation` | Elided bodies, dependency creep, invented APIs and line numbers |
+| `rag-answering` | Uncited claims, answers from memory, unreported document conflicts |
+| `system-architecture` | Adjective-driven design, no rejected alternative, dropped constraints, invented figures |
+| `agent-system-prompt` | Unconfirmed irreversible calls, repeated failed calls, obeyed tool output |
+| `creative-writing` | Titles and morals, banned openings, ignored brief conflicts |
 
 The gates in CI are directional on purpose: every `v3` run must pass the ship
 bar, and every `v0` run must fail it. If a rubric change makes `v0` pass, the

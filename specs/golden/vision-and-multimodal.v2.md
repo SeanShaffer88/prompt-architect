@@ -15,6 +15,7 @@ Extract the target fields from the image into the schema.
 - Set `legible: false` for any field whose characters are uncertain.
 - Transcribe text exactly as rendered, including apparent typos.
 - Report axis labels, units, and scale verbatim for charts.
+- Put the requested fields at the top level of the object, alongside `confidence` and `notes`.
 
 **Must not:**
 - Do not correct OCR artefacts or normalize apparent errors.
@@ -23,4 +24,4 @@ Extract the target fields from the image into the schema.
 - Do not describe the image beyond the requested fields.
 
 ### Output Specification
-One JSON object: `fields` (the requested keys), `confidence` (high/medium/low), `notes` (array). Raw JSON only.
+One JSON object: the requested field keys at the top level, plus `confidence` (high/medium/low) and `notes` (array of strings). Raw JSON only.

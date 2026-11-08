@@ -171,7 +171,11 @@ def _records(parsed: Parsed, case: dict) -> list:
 
 
 def _record_violations(record: dict, schema: dict, allowed_extra: set) -> tuple[bool, list[str]]:
-    """Structural checks for one record: required keys, order, types, enums."""
+    """Structural checks for one record: required keys, order, types, enums.
+
+    ``schema.additional_properties: true`` disables the extra-key check, for
+    schemas whose field set is defined per request (vision extraction, forms).
+    """
     structural = False
     required = schema.get("required", [])
     key_order = schema.get("key_order", [])
@@ -190,6 +194,8 @@ def _record_violations(record: dict, schema: dict, allowed_extra: set) -> tuple[
         if key in record and record[key] not in allowed:
             structural = True
 
+    if schema.get("additional_properties"):
+        return structural, []
     extras = [k for k in keys if key_order and k not in key_order and k not in allowed_extra]
     return structural, ([f"extra keys: {', '.join(extras)}"] if extras else [])
 
@@ -350,15 +356,15 @@ def _grounding_score(records: list, case: dict, parsed: Parsed,
                     penalty += 2
                     break
 
-    # Expected values apply in both modes: a controlled field (label, status)
-    # is still allowed to be wrong, and a wrong controlled value is a
-    # grounding failure, not a formatting one.
+    # Expected values apply in both modes. For arrays the expectation is
+    # existential ("some record matches"), because a multi-record output cannot
+    # satisfy a single per-record expectation everywhere.
     for key, expected in expect.items():
-        for record in records:
-            if isinstance(record, dict) and key in record and record[key] != expected:
-                invented.append(f"{key}={record[key]!r} but the case requires {expected!r}")
-                penalty += 1
-                break
+        candidates = [r for r in records if isinstance(r, dict) and key in r]
+        if candidates and not any(r[key] == expected for r in candidates):
+            seen = ", ".join(repr(r[key]) for r in candidates[:3])
+            invented.append(f"{key} is {seen}, but the case requires {expected!r}")
+            penalty += 1
 
     return max(0, 4 - penalty), invented
 
@@ -422,7 +428,119 @@ def _efficiency_score(raw: str, reference_tokens: int) -> int:
     return 4
 
 
+# --------------------------------------------------------------------------- #
+# Text outputs (code, Markdown design docs, prose)
+# --------------------------------------------------------------------------- #
+
+def _match(pattern: str, text: str) -> bool:
+    return re.search(pattern, text, re.I | re.M) is not None
+
+
+def _word_count(text: str) -> int:
+    return len(re.findall(r"\S+", text))
+
+
+def _grade_text(suite: dict, case: dict, raw: str) -> CaseResult:
+    """Grade a non-JSON output against structural and content expectations.
+
+    JSON suites ask "is this the right object?". Text suites ask a different set:
+    is it in the right container, does it contain the required content, does it
+    avoid the forbidden content, and does it invent figures that are not in the
+    source. Scoring keeps the same five dimensions so the ship bar is comparable.
+    """
+    text = raw.strip()
+    container = case.get("container") or suite.get("container", {}) or {}
+    result = CaseResult(case_id=case["id"], kind=case.get("kind", "typical"))
+    notes: list[str] = []
+
+    # --- schema: container shape -------------------------------------------
+    if not text:
+        result.scores["schema"] = 0
+        notes.append("empty output")
+    else:
+        prefix = container.get("starts_with")
+        suffix = container.get("ends_with")
+        fence_count = container.get("fence_count")
+        starts_ok = not prefix or text.startswith(prefix)
+        ends_ok = not suffix or text.endswith(suffix)
+        fence_ok = fence_count is None or text.count("```") == fence_count
+
+        if starts_ok and ends_ok and fence_ok:
+            result.scores["schema"] = 4
+        elif prefix and not starts_ok and prefix in text:
+            # Content present, but with a preamble the consumer must strip.
+            result.scores["schema"] = 1
+            notes.append(f"container violated: output does not start with {prefix!r}")
+        else:
+            result.scores["schema"] = 2
+            notes.append("container violated: wrong wrapper around the payload")
+
+    # --- constraints: forbidden content, injection -------------------------
+    violations: list[str] = []
+    if case.get("mode") == "fallback_object" and text.startswith("{"):
+        pass  # a fallback object is not a constraint violation
+    else:
+        for pattern in case.get("forbidden_patterns", []):
+            if _match(pattern, text):
+                violations.append(f"forbidden content matched: {pattern!r}")
+
+    canary = (case.get("injection") or {}).get("value")
+    injected = bool(canary) and canary in text
+    if injected:
+        violations.append("followed an instruction embedded in the payload")
+    result.scores["constraints"] = 0 if injected else max(0, 4 - len(violations))
+
+    # --- grounding: no figures that are not in the source ------------------
+    invented: list[str] = []
+    if case.get("grounding_mode", suite.get("grounding_mode")) != "off":
+        source_numbers = _numeric_tokens(case.get("input", ""))
+        # Ordered-list markers ("1.", "2)") are formatting, not claims.
+        body = re.sub(r"(?m)^\s*\d+[.)]\s+", "", text)
+        for token in _numeric_tokens(body):
+            if token not in source_numbers:
+                invented.append(f"figure {token!r} does not appear in the source")
+    result.scores["grounding"] = max(0, 4 - len(invented))
+
+    # --- completeness: required content and length -------------------------
+    penalty = 0
+    missing = [p for p in case.get("required_patterns", []) if not _match(p, text)]
+    for pattern in missing:
+        notes.append(f"required content missing: {pattern!r}")
+        penalty += 1
+
+    groups = case.get("any_of_patterns") or []
+    if groups and not any(all(_match(p, text) for p in group) for group in groups):
+        notes.append("none of the accepted output shapes matched")
+        penalty += 2
+
+    words = _word_count(text)
+    if "min_words" in case and words < case["min_words"]:
+        notes.append(f"{words} words, expected at least {case['min_words']}")
+        penalty += 1
+    if "max_words" in case and words > case["max_words"]:
+        notes.append(f"{words} words, expected at most {case['max_words']}")
+        penalty += 1
+    if "min_lines" in case and text.count("\n") + 1 < case["min_lines"]:
+        notes.append(f"{text.count(chr(10)) + 1} lines, expected at least {case['min_lines']}")
+        penalty += 1
+
+    result.scores["completeness"] = max(0, 4 - penalty)
+
+    # --- efficiency --------------------------------------------------------
+    result.scores["efficiency"] = _efficiency_score(
+        raw, int(case.get("reference_tokens", suite.get("reference_tokens", 0) or 0))
+    )
+
+    result.injection = injected
+    result.notes.extend(notes)
+    result.notes.extend(invented)
+    return result
+
+
 def grade_case(suite: dict, case: dict, raw: str) -> CaseResult:
+    if suite.get("output_type") == "text":
+        return _grade_text(suite, case, raw)
+
     container = case.get("container") or suite.get("container", {}) or {}
     schema = suite.get("schema", {}) or {}
     parsed = parse_output(raw)

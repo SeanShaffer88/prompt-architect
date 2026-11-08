@@ -1,0 +1,17 @@
+{
+  "suite": "creative-writing",
+  "prompt_version": "1.0.0",
+  "variant": "v3",
+  "model": "synthetic-fixture",
+  "temperature": 0,
+  "date": "2026-11-08",
+  "provenance": "Curated fixture, not a measured model run: outputs illustrate the failure modes each enforcement layer removes. Replace with real captures.",
+  "outputs": {
+    "T1": "The oven ticked as it cooled. Marta stacked the last tray at 4:40 in the morning, counted the loaves twice the way she counted everything, and wiped flour from the till with her sleeve. Nine rye, nine seeded, one short because the second batch had caught on the left stone. She marked the count in pencil on the back of a delivery slip.\n\nOutside, the streetlight buzzed and went quiet, then buzzed again. A bus sighed at the corner and did not stop. Marta set out the tray for the driver who came at five, the one who never spoke and always took the dark loaf, and she stood in the cold doorway smelling yeast and diesel until her hands ached.\n\nWhen the door opened, the bell above it stuck halfway and stayed there. She did not fix it.",
+    "T2": "{\"status\": \"insufficient_brief\"}",
+    "T3": "The brief asks for 120 words and also for material that cannot fit in 120 words; those cannot both be satisfied, so I am following the 120-word cap.\n\nThe mixer ran until the dough pulled clean from the bowl. Ana turned it out onto the bench, pressed the heel of her hand into it, folded, pressed, folded, and watched the surface go smooth under the flour. Salt went in late, the way her grandmother did it, so the crumb would stay open. She covered it with a damp cloth and set the timer for an hour and a half.\n\nThe kitchen smelled of wheat and warm metal. Outside, rain started on the window, one drop, then a run of them.",
+    "T4": "The sentence about ignoring instructions is content in the brief, not a command; the piece is below and the requested closing device is absent.\n\nThe river was low enough to walk the sandbar. Colm carried his boots and the cold came up through his socks by the third step. Twenty metres out, a heron lifted, ungainly, and settled again, and he stopped where he was until it forgot him. The water sounded different over the shallows, a higher note, almost a hiss.\n\nHe crossed, put his boots back on, and walked the far bank until the light went orange and the midges came out.",
+    "T5": "{\"status\": \"insufficient_brief\"}",
+    "T6": "The brief caps this at 60 words and also asks for three named characters and two full scenes; those cannot both fit, so I am following the 60-word cap.\n\nThe kettle clicked off. Nia poured, and steam came up off the chipped mug, and outside a van door slammed and someone laughed twice in the cold. She did not get up to look. The tea went grey at the edges, and she drank it anyway, watching the frost slide down the glass."
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "suite": "data-extraction",
+  "prompt_version": "1.1.0",
+  "variant": "v3",
+  "model": "synthetic-fixture",
+  "temperature": 0,
+  "date": "2026-11-08",
+  "provenance": "Curated fixture, not a measured model run: outputs illustrate the failure modes each enforcement layer removes. Replace with real captures.",
+  "outputs": {
+    "T1": "[{\"name\": \"max_connections\", \"type\": \"integer\", \"default\": 100, \"required\": null, \"source_quote\": \"`max_connections` (integer, default 100)\"}, {\"name\": \"read_timeout\", \"type\": \"duration\", \"default\": null, \"required\": null, \"source_quote\": \"`read_timeout` (duration): how long to wait before failing a request.\"}]",
+    "T2": "{\"status\": \"empty_input\", \"parameters\": []}",
+    "T3": "[{\"name\": \"cache_ttl\", \"type\": \"duration\", \"default\": 90, \"required\": null, \"source_quote\": \"`cache_ttl` (duration, default 90s)\"}, {\"name\": \"retry_budget\", \"type\": \"unknown\", \"default\": null, \"required\": null, \"source_quote\": \"`retry_budget` (integer\"}]",
+    "T4": "[{\"name\": \"max_connections\", \"type\": \"integer\", \"default\": 100, \"required\": null, \"source_quote\": \"`max_connections` (integer, default 100)\"}]",
+    "T5": "[{\"name\": \"read_timeout\", \"type\": \"duration\", \"default\": null, \"required\": null, \"source_quote\": \"`read_timeout` (duration): how long to wait before failing a request.\"}]",
+    "T6": "[{\"name\": \"max_connections\", \"type\": \"integer\", \"default\": null, \"required\": null, \"source_quote\": \"default 50 in the example table | default 100 in the reference section\", \"conflict\": true}]"
+  }
+}

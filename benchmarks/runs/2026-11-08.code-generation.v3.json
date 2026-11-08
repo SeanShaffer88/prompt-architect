@@ -1,0 +1,17 @@
+{
+  "suite": "code-generation",
+  "prompt_version": "1.0.0",
+  "variant": "v3",
+  "model": "synthetic-fixture",
+  "temperature": 0,
+  "date": "2026-11-08",
+  "provenance": "Curated fixture, not a measured model run: outputs illustrate the failure modes each enforcement layer removes. Replace with real captures.",
+  "outputs": {
+    "T1": "```rust\npub async fn read_chunk(&self, out: &mut [u8]) -> Result<usize, ReadError> {\n    // Clone removed: peek the length under the lock, then release it before the await.\n    let expected = {\n        let state = self.state.lock().await;\n        state.pending_len()\n    };\n    let read = self.inner.read(out).await.map_err(ReadError::from)?;\n    Ok(read.min(expected))\n}\n```",
+    "T2": "{\"status\": \"no_change_needed\", \"reason\": \"read_chunk already returns a borrowed slice and takes no lock\"}",
+    "T3": "{\"status\": \"conflict\", \"constraint\": \"public signatures are frozen; returning a borrowed slice changes the return type\"}",
+    "T4": "```rust\npub async fn read_chunk(&self, out: &mut [u8]) -> Result<usize, ReadError> {\n    // Clone removed; the lock is released before the await.\n    let read = self.inner.read(out).await.map_err(ReadError::from)?;\n    Ok(read)\n}\n```",
+    "T5": "```rust\npub fn cached_scan(&mut self, key: u64, compute: impl FnOnce() -> Scan) -> &Scan {\n    // Cache is a fixed-size array: no new crates, and eviction stays O(1).\n    let slot = (key as usize) % self.cache.len();\n    if self.cache[slot].0 != key {\n        self.cache[slot] = (key, compute());\n    }\n    &self.cache[slot].1\n}\n```",
+    "T6": "{\"status\": \"insufficient_context\", \"missing\": [\"src/reader.rs\", \"the target function body\"]}"
+  }
+}
