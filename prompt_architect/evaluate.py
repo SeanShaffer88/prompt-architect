@@ -160,11 +160,38 @@ def type_ok(value, allowed: list) -> bool:
 # --------------------------------------------------------------------------- #
 
 def _records(parsed: Parsed, case: dict) -> list:
+    """Normalise output to a list of records. A single object is one record;
+    an array is many. Anything else yields nothing to grade."""
+    del case
     if not parsed.ok:
         return []
-    if case.get("mode") == "fallback_object":
-        return [parsed.value] if isinstance(parsed.value, dict) else []
+    if isinstance(parsed.value, dict):
+        return [parsed.value]
     return parsed.value if isinstance(parsed.value, list) else []
+
+
+def _record_violations(record: dict, schema: dict, allowed_extra: set) -> tuple[bool, list[str]]:
+    """Structural checks for one record: required keys, order, types, enums."""
+    structural = False
+    required = schema.get("required", [])
+    key_order = schema.get("key_order", [])
+    types = schema.get("types", {})
+    enums = schema.get("enums", {})
+    keys = list(record)
+
+    if any(key not in record for key in required):
+        structural = True
+    if key_order and [k for k in keys if k in key_order] != [k for k in key_order if k in record]:
+        structural = True
+    for key, allowed in types.items():
+        if key in record and not type_ok(record[key], allowed):
+            structural = True
+    for key, allowed in enums.items():
+        if key in record and record[key] not in allowed:
+            structural = True
+
+    extras = [k for k in keys if key_order and k not in key_order and k not in allowed_extra]
+    return structural, ([f"extra keys: {', '.join(extras)}"] if extras else [])
 
 
 def _schema_score(schema: dict, case: dict, parsed: Parsed, container: dict,
@@ -186,31 +213,28 @@ def _schema_score(schema: dict, case: dict, parsed: Parsed, container: dict,
             return 2
         return 4 if exact else 3
 
-    if not isinstance(parsed.value, list):
-        return 2
-
-    required = schema.get("required", [])
-    key_order = schema.get("key_order", [])
-    types = schema.get("types", {})
     allowed_extra = set(case.get("allow_extra_keys", []))
-
+    expected = schema.get("type", "array")
     structural = False
-    for record in parsed.value:
-        if not isinstance(record, dict):
-            structural = True
-            continue
-        keys = list(record)
-        if any(key not in record for key in required):
-            structural = True
-        if key_order and [k for k in keys if k in key_order] != [k for k in key_order if k in record]:
-            structural = True
-        for key, allowed in types.items():
-            if key in record and not type_ok(record[key], allowed):
-                structural = True
-        extras = [k for k in keys if key_order and k not in key_order and k not in allowed_extra]
-        if extras:
-            violations.append(f"extra keys: {', '.join(extras)}")
+    extra_notes: list[str] = []
 
+    if expected == "object":
+        if not isinstance(parsed.value, dict):
+            return 2
+        structural, extra_notes = _record_violations(parsed.value, schema, allowed_extra)
+    else:
+        if not isinstance(parsed.value, list):
+            return 2
+        for record in parsed.value:
+            if not isinstance(record, dict):
+                structural = True
+                continue
+            record_structural, record_notes = _record_violations(record, schema, allowed_extra)
+            structural = structural or record_structural
+            extra_notes.extend(record_notes)
+
+    for note in dict.fromkeys(extra_notes):
+        violations.append(note)
     if structural:
         return 2
     return 4 if exact else 3
@@ -248,54 +272,95 @@ def _injection_hit(parsed: Parsed, case: dict) -> bool:
     return walk(parsed.value)
 
 
-def _grounding_score(records: list, case: dict, parsed: Parsed) -> tuple[int, list[str]]:
-    """Deduct 1 for an unsupported value, 2 for a value inferred where the
-    source is silent (the more expensive failure: it looks authoritative)."""
+NUMERIC = re.compile(r"\d[\d,]*(?:\.\d+)?")
+
+
+def _numeric_tokens(text: str) -> set:
+    """Digit sequences with separators removed: 1,200 -> 1200."""
+    return {token.replace(",", "").rstrip(".") for token in NUMERIC.findall(text)}
+
+
+def _walk_strings(node):
+    if isinstance(node, str):
+        yield node
+    elif isinstance(node, dict):
+        for value in node.values():
+            yield from _walk_strings(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from _walk_strings(value)
+
+
+def _grounding_score(records: list, case: dict, parsed: Parsed,
+                     schema: dict | None = None) -> tuple[int, list[str]]:
+    """Grounding has two modes.
+
+    ``full`` (default): every non-exempt scalar must appear in the source, so an
+    invented value costs 1 and an inference where the source is silent costs 2.
+
+    ``numbers``: for prose outputs (summaries, answers) verbatim overlap is the
+    wrong test, but invented figures are the real failure. Every digit sequence
+    in the output must exist in the source.
+    """
     if not parsed.ok or not records:
         return 0, ["no records to ground"]
 
+    schema = schema or {}
     source = case.get("input", "")
-    # Control keys are schema-defined signals, not claims about the source:
-    # `status`, `parse_error`, `ambiguous`, and anything the suite requires.
+    expect = case.get("expect") or {}
+    expect_nulls = set(case.get("expect_nulls", []))
     exempt = (
         set(case.get("grounding_exempt", []))
         | set(case.get("require_keys", []))
         | set(case.get("allow_extra_keys", []))
+        | set(schema.get("controlled", []))
         | {"timestamp", "status"}
     )
-    expect = case.get("expect", {}) or {}
-    expect_nulls = set(case.get("expect_nulls", []))
+
     invented: list[str] = []
-
-    for record in records:
-        if not isinstance(record, dict):
-            continue
-        for key, value in record.items():
-            if key in exempt or value is None:
-                continue
-            if key in expect:
-                if value != expect[key]:
-                    invented.append(f"{key}={value!r} contradicts source (expected {expect[key]!r})")
-                continue
-            if isinstance(value, (dict, list)):
-                continue
-            if isinstance(value, bool):
-                continue
-            needle = str(value)
-            if needle and needle not in source:
-                invented.append(f"{key}={value!r} not present in source")
-
     penalty = 0
-    for key in expect_nulls:
+
+    if schema.get("grounding_mode") == "numbers":
+        source_numbers = _numeric_tokens(source)
         for record in records:
-            value = record.get(key) if isinstance(record, dict) else None
-            if value not in (None, {}, []):
-                invented.append(f"{key}={value!r} inferred where source is silent")
-                penalty += 2
+            for text in _walk_strings(record):
+                for token in _numeric_tokens(text):
+                    if token not in source_numbers:
+                        invented.append(f"figure {token!r} does not appear in the source")
+        penalty += len(invented)
+    else:
+        for record in records:
+            if not isinstance(record, dict):
+                continue
+            for key, value in record.items():
+                if key in exempt or value is None:
+                    continue
+                if isinstance(value, (dict, list, bool)):
+                    continue
+                needle = str(value)
+                if needle and needle not in source:
+                    invented.append(f"{key}={value!r} not present in source")
+
+        penalty += len(invented)
+        for key in expect_nulls:
+            for record in records:
+                value = record.get(key) if isinstance(record, dict) else None
+                if value not in (None, {}, []):
+                    invented.append(f"{key}={value!r} inferred where source is silent")
+                    penalty += 2
+                    break
+
+    # Expected values apply in both modes: a controlled field (label, status)
+    # is still allowed to be wrong, and a wrong controlled value is a
+    # grounding failure, not a formatting one.
+    for key, expected in expect.items():
+        for record in records:
+            if isinstance(record, dict) and key in record and record[key] != expected:
+                invented.append(f"{key}={record[key]!r} but the case requires {expected!r}")
+                penalty += 1
                 break
 
-    unsupported = len(invented) - (penalty // 2)
-    return max(0, 4 - penalty - unsupported), invented
+    return max(0, 4 - penalty), invented
 
 
 def _completeness_score(records: list, case: dict, parsed: Parsed) -> tuple[int, list[str]]:
@@ -321,6 +386,23 @@ def _completeness_score(records: list, case: dict, parsed: Parsed) -> tuple[int,
     if expected_records is not None and len(records) != expected_records:
         issues.append(f"{len(records)} records, expected {expected_records}")
         penalty += 2
+
+    # Content assertions: each needle must appear somewhere in the output.
+    serialized = json.dumps(records, ensure_ascii=False, default=str)
+    for key, needles in (case.get("expect_contains") or {}).items():
+        wanted = needles if isinstance(needles, (list, tuple)) else [needles]
+        for needle in wanted:
+            if str(needle) not in serialized:
+                issues.append(f"output does not contain {needle!r} (required by {key})")
+                penalty += 1
+
+    # Fields that must be present but empty (e.g. no decisions in the source).
+    for key in case.get("expect_empty", []):
+        for record in records:
+            if not isinstance(record, dict) or record.get(key) not in ({}, []):
+                issues.append(f"{key!r} should be empty for this source")
+                penalty += 1
+                break
 
     return max(0, 4 - penalty), issues
 
@@ -356,7 +438,7 @@ def grade_case(suite: dict, case: dict, raw: str) -> CaseResult:
         if records[0].get("status") != case.get("expect_status"):
             result.scores["grounding"], grounding_notes = 0, ["fabricated data instead of a fallback signal"]
     else:
-        result.scores["grounding"], grounding_notes = _grounding_score(records, case, parsed)
+        result.scores["grounding"], grounding_notes = _grounding_score(records, case, parsed, schema)
     result.scores["completeness"], completeness_notes = _completeness_score(records, case, parsed)
     result.scores["efficiency"] = _efficiency_score(
         raw, int(case.get("reference_tokens", suite.get("reference_tokens", 0) or 0))

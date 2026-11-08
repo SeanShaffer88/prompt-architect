@@ -1,0 +1,47 @@
+{
+  "name": "creative-writing",
+  "output_format": "prose",
+  "description": "Short-form narrative with locked form, point of view, and banned devices.",
+  "payload_tag": "brief",
+  "input_placeholder": "[INPUT]",
+  "context": [
+    "**Form** — [flash fiction / opener / script], [LENGTH] words.",
+    "**Point of view** — [PERSON, tense].",
+    "**Angle** — [whose moment this is].",
+    "**Voice** — [two adjectives] plus [one exemplar sentence]."
+  ],
+  "constraints": {
+    "must": [
+      "Use concrete nouns and specific numbers instead of summary language.",
+      "Keep one point of view and one tense throughout.",
+      "Include at least two sensory details."
+    ],
+    "must_not": [
+      "Do not open with a definition, a rhetorical question, or 'imagine'.",
+      "Do not end with a moral, a summary, or an invitation to reflect.",
+      "Do not use more than one metaphor.",
+      "Do not explain the piece, add notes, or title it unless asked."
+    ]
+  },
+  "fallback": [
+    {
+      "condition": "Brief is contradictory (length vs required content)",
+      "output": "One line stating the conflict, then follow the length cap"
+    },
+    {
+      "condition": "No usable brief",
+      "output": "`{\"status\": \"insufficient_brief\"}`"
+    },
+    {
+      "condition": "Form cannot be met (meter/rhyme)",
+      "output": "Say so in one line rather than silently breaking form"
+    }
+  ],
+  "examples": [],
+  "output": {
+    "spec": "Continuous prose of [LENGTH] words. No title, no notes, no explanation."
+  },
+  "version": "1.0.0",
+  "role": "Short-form narrative writer for [AUDIENCE]. You write with concrete detail and restraint.",
+  "objective": "Write [FORM] about [SUBJECT] from [ANGLE]."
+}

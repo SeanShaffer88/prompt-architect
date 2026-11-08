@@ -110,6 +110,95 @@ class GradingTests(unittest.TestCase):
             evaluate.load_run(SUITE)  # a suite is not a run: no 'outputs'
 
 
+class StructuredOutputTests(unittest.TestCase):
+    """Object-typed schemas, closed vocabularies, and content assertions."""
+
+    def suite(self, **schema):
+        base = {
+            "type": "object",
+            "required": ["label"],
+            "key_order": ["label"],
+            "types": {"label": ["string"]},
+        }
+        base.update(schema)
+        return {"name": "unit", "container": {"first_char": "{", "last_char": "}"},
+                "schema": base, "cases": []}
+
+    def case(self, **kw):
+        base = {"id": "T1", "kind": "typical", "input": "ticket text", "reference_tokens": 10}
+        base.update(kw)
+        return base
+
+    def grade(self, suite, case, raw):
+        return evaluate.grade_case(suite, case, raw)
+
+    def test_single_object_is_one_record(self):
+        result = self.grade(self.suite(), self.case(expect={"label": "billing"}),
+                            '{"label": "billing"}')
+        self.assertEqual(result.scores["schema"], 4)
+
+    def test_wrong_container_scores_three(self):
+        result = self.grade(self.suite(), self.case(), '[{"label": "billing"}]')
+        self.assertLessEqual(result.scores["schema"], 3)
+
+    def test_enum_violation_is_structural(self):
+        suite = self.suite(enums={"label": ["billing", "bug"]})
+        result = self.grade(suite, self.case(), '{"label": "refund"}')
+        self.assertEqual(result.scores["schema"], 2)
+
+    def test_enum_member_passes(self):
+        suite = self.suite(enums={"label": ["billing", "bug"]})
+        result = self.grade(suite, self.case(), '{"label": "bug"}')
+        self.assertEqual(result.scores["schema"], 4)
+
+    def test_controlled_fields_are_not_grounding_claims(self):
+        suite = self.suite(controlled=["label"])
+        result = self.grade(suite, self.case(), '{"label": "billing"}')
+        self.assertEqual(result.scores["grounding"], 4)
+
+    def test_uncontrolled_string_must_appear_in_source(self):
+        suite = self.suite(required=["label", "note"], key_order=["label", "note"],
+                           types={"label": ["string"], "note": ["string"]})
+        result = self.grade(suite, self.case(), '{"label": "billing", "note": "invented detail"}')
+        self.assertLess(result.scores["grounding"], 4)
+
+    def test_expected_value_mismatch_costs_grounding(self):
+        result = self.grade(self.suite(), self.case(expect={"label": "bug"}),
+                            '{"label": "billing"}')
+        self.assertLess(result.scores["grounding"], 4)
+
+    def test_numbers_mode_flags_invented_figures(self):
+        suite = self.suite(grounding_mode="numbers", required=["summary"],
+                           key_order=["summary"], types={"summary": ["string"]})
+        ok = self.grade(suite, self.case(input="14:02 spike, 1,200 orders failed"),
+                        '{"summary": "spike at 14:02 affecting 1,200 orders"}')
+        bad = self.grade(suite, self.case(input="14:02 spike, 1,200 orders failed"),
+                         '{"summary": "spike at 14:07 affecting 1,200 orders"}')
+        self.assertEqual(ok.scores["grounding"], 4)
+        self.assertLess(bad.scores["grounding"], 4)
+
+    def test_expect_contains_is_checked(self):
+        result = self.grade(self.suite(), self.case(expect_contains={"label": "needs"}),
+                            '{"label": "billing"}')
+        self.assertLess(result.scores["completeness"], 4)
+
+    def test_expect_contains_accepts_lists(self):
+        result = self.grade(self.suite(required=["a", "b"], key_order=["a", "b"],
+                                       types={"a": ["string"], "b": ["string"]}),
+                            self.case(expect_contains={"a": ["x", "y"]}),
+                            '{"a": "x", "b": "y"}')
+        self.assertEqual(result.scores["completeness"], 4)
+
+    def test_expect_empty_is_checked(self):
+        suite = self.suite(required=["decisions"], key_order=["decisions"],
+                           types={"decisions": ["array"]})
+        ok = self.grade(suite, self.case(expect_empty=["decisions"]), '{"decisions": []}')
+        bad = self.grade(suite, self.case(expect_empty=["decisions"]),
+                         '{"decisions": ["invented action"]}')
+        self.assertEqual(ok.scores["completeness"], 4)
+        self.assertLess(bad.scores["completeness"], 4)
+
+
 class EfficiencyTests(unittest.TestCase):
     def test_efficiency_anchors(self):
         self.assertEqual(evaluate._efficiency_score("x" * 40, 10), 4)    # 10 tok = 1.0x
