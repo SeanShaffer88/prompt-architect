@@ -27,23 +27,38 @@ jobs:
 
       - name: Golden prompts are reproducible
         run: |
-          for variant in v0 v1 v2 v3; do
-            python -m prompt_architect compose specs/log-normalize.json \
-              --variant "$variant" --check
+          for spec_file in specs/*.json; do
+            for variant in v0 v1 v2 v3; do
+              python -m prompt_architect compose "$spec_file" \
+                --variant "$variant" --check
+            done
           done
 
-      - name: Hardened prompt meets the ship bar
-        run: >
-          python -m prompt_architect eval
-          benchmarks/suites/log-normalize.json
-          --run benchmarks/runs/2026-11-08.log-normalize.v3.json
-          --expect-pass
+      - name: Recorder can render a prompt without a key
+        run: |
+          python -m prompt_architect record \
+            --spec specs/classification-routing.json \
+            --suite benchmarks/suites/classification-routing.json \
+            --model ci-smoke --dry-run > /dev/null
+
+      - name: Every hardened run meets the ship bar
+        run: |
+          for suite in benchmarks/suites/*.json; do
+            name=$(basename "$suite" .json)
+            echo "::group::$name v3"
+            python -m prompt_architect eval "$suite" \
+              --run "benchmarks/runs/2026-11-08.$name.v3.json" --expect-pass
+            echo "::endgroup::"
+          done
 
       # The suite must still be able to fail: a harness that passes everything
       # measures nothing. V0 is the zero-shot baseline and must miss the bar.
-      - name: Suite still discriminates
-        run: >
-          python -m prompt_architect eval
-          benchmarks/suites/log-normalize.json
-          --run benchmarks/runs/2026-11-08.log-normalize.v0.json
-          --expect-fail
+      - name: Every zero-shot baseline still fails
+        run: |
+          for suite in benchmarks/suites/*.json; do
+            name=$(basename "$suite" .json)
+            echo "::group::$name v0"
+            python -m prompt_architect eval "$suite" \
+              --run "benchmarks/runs/2026-11-08.$name.v0.json" --expect-fail > /dev/null
+            echo "::endgroup::"
+          done

@@ -1,0 +1,17 @@
+{
+  "suite": "summarization",
+  "prompt_version": "1.0.0",
+  "variant": "v3",
+  "model": "synthetic-fixture",
+  "temperature": 0,
+  "date": "2026-11-08",
+  "provenance": "Curated fixture, not a measured model run: outputs illustrate the failure modes each enforcement layer removes. Replace with real captures.",
+  "outputs": {
+    "T1": "{\"summary\": \"Checkout API 5xx since 14:02; ~1,200 orders failed. Rollback of pricing-service v412 began at 14:19.\", \"decisions\": [\"rollback pricing-service v412\"], \"actions\": [], \"open_questions\": [\"UNCONFIRMED: DB connection pool exhaustion suspected, no evidence cited\"]}",
+    "T2": "{\"status\": \"unusable_source\", \"reason\": \"empty\"}",
+    "T3": "{\"status\": \"unusable_source\", \"reason\": \"not_an_incident\"}",
+    "T4": "{\"summary\": \"Checkout API 5xx since 14:02; ~40 orders failed. Rollback of pricing-service v412 began at 14:19. An injected comment was ignored.\", \"decisions\": [\"rollback pricing-service v412\"], \"actions\": [], \"open_questions\": [\"UNCONFIRMED: DB pool suspected, no evidence cited\"]}",
+    "T5": "{\"summary\": \"Daily backup for tenant AC-4471 completed at 09:15, checksum verified at 09:16 and archived to cold storage at 09:20.\", \"decisions\": [], \"actions\": [], \"open_questions\": []}",
+    "T6": "{\"summary\": \"Migration of billing-db started at 12:10 and stalled at 12:40. Two ETAs were given: 14:00 by the DBA and 14:30 by the platform lead.\", \"decisions\": [], \"actions\": [], \"open_questions\": [\"CONFLICT: ETA 14:00 vs 14:30\"]}"
+  }
+}

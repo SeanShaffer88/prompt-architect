@@ -16,7 +16,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import __version__, evaluate, lint, spec
+from . import __version__, evaluate, lint, record, spec
 
 
 def _cmd_lint(args: argparse.Namespace) -> int:
@@ -135,6 +135,42 @@ def _cmd_eval(args: argparse.Namespace) -> int:
     return 1 if failed else 0
 
 
+
+def _cmd_record(args: argparse.Namespace) -> int:
+    if args.dry_run:
+        try:
+            messages = record.build_messages(args.spec, args.variant, "")
+        except (spec.SpecError, OSError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        print("--- system ---")
+        print(messages[0]["content"])
+        print("--- user ---")
+        print("(the suite case input is sent here)")
+        return 0
+
+    api_key = args.api_key or record.key_from_env(args.api_key_env)
+    if not api_key:
+        print(f"error: no API key. Set {args.api_key_env} or pass --api-key.", file=sys.stderr)
+        return 2
+
+    try:
+        result = record.record(
+            spec_path=args.spec, suite_path=args.suite, variant=args.variant,
+            model=args.model, base_url=args.base_url, api_key=api_key,
+            temperature=args.temperature, max_tokens=args.max_tokens,
+            out_path=args.out, timeout=args.timeout,
+        )
+    except (record.RecordError, evaluate.SuiteError, spec.SpecError, OSError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
+    print(f"captured {result.cases} case(s) -> {result.path}")
+    print(f"model: {result.model}  variant: {result.variant}")
+    print(f"grade it: python -m prompt_architect eval {args.suite} --run {result.path}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="prompt-architect",
@@ -171,6 +207,25 @@ def build_parser() -> argparse.ArgumentParser:
     eval_cmd.add_argument("--expect-fail", action="store_true",
                           help="fail if the run DOES meet the ship bar (regression guard)")
     eval_cmd.set_defaults(func=_cmd_eval)
+
+    record_cmd = sub.add_parser("record", help="capture a real model run into a run file")
+    record_cmd.add_argument("--spec", required=True, help="path to a JSON prompt spec")
+    record_cmd.add_argument("--suite", required=True, help="path to a benchmark suite JSON")
+    record_cmd.add_argument("--variant", default="v3", choices=spec.VARIANTS)
+    record_cmd.add_argument("--model", required=True, help="exact model id, including version")
+    record_cmd.add_argument("--base-url", default=record.DEFAULT_BASE_URL,
+                            help="OpenAI-compatible base URL")
+    record_cmd.add_argument("--api-key-env", default=record.DEFAULT_KEY_ENV,
+                            help="environment variable holding the API key")
+    record_cmd.add_argument("--api-key", default=None,
+                            help="API key value (prefer the environment variable)")
+    record_cmd.add_argument("--temperature", type=float, default=0.0)
+    record_cmd.add_argument("--max-tokens", type=int, default=None)
+    record_cmd.add_argument("--timeout", type=float, default=120.0)
+    record_cmd.add_argument("--out", default=None, help="output run file path")
+    record_cmd.add_argument("--dry-run", action="store_true",
+                            help="print the rendered system prompt and exit")
+    record_cmd.set_defaults(func=_cmd_record)
     return parser
 
 

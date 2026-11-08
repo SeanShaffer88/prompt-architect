@@ -1,0 +1,49 @@
+{
+  "name": "code-generation",
+  "output_format": "markdown-code-fence",
+  "description": "Refactor a target symbol without changing public API or dependency policy.",
+  "payload_tag": "code",
+  "input_placeholder": "[INPUT]",
+  "context": [
+    "**Target platform** — [PLATFORM], [LANGUAGE/RUNTIME VERSION].",
+    "**Dependency policy** — [ALLOWLIST or None].",
+    "**Change budget** — [TARGET SYMBOL] only; public signatures frozen.",
+    "**Goal** — [MEASURABLE OUTCOME, e.g. remove per-chunk allocation]."
+  ],
+  "constraints": {
+    "must": [
+      "Handle every edge case explicitly with the project's error type ([Result/exception]).",
+      "Keep the complete file compilable as returned.",
+      "Comment each changed block with the hazard or cost it removes."
+    ],
+    "must_not": [
+      "Do not add dependencies outside the stated policy.",
+      "Do not change public signatures, trait implementations, or error types.",
+      "Do not reformat or rename code outside the target.",
+      "Do not elide unchanged code with placeholders such as 'unchanged'.",
+      "Do not include prose, preamble, or post-code explanation."
+    ]
+  },
+  "fallback": [
+    {
+      "condition": "No change is warranted",
+      "output": "`{\"status\": \"no_change_needed\", \"reason\": \"...\"}` instead of code"
+    },
+    {
+      "condition": "Goal conflicts with the API freeze",
+      "output": "`{\"status\": \"conflict\", \"constraint\": \"...\"}`"
+    },
+    {
+      "condition": "Required context is missing",
+      "output": "`{\"status\": \"insufficient_context\", \"missing\": [...]}`"
+    }
+  ],
+  "examples": [],
+  "output": {
+    "spec": "The complete file inside a single fenced block whose info string is the language, with inline comments on changed blocks. No elisions. Nothing outside the fence.",
+    "precedence": "If the stated goal cannot be met without violating a constraint, return the conflict object and stop."
+  },
+  "version": "1.0.0",
+  "role": "Expert software engineering agent specializing in high-performance, memory-safe [LANGUAGE] applications.",
+  "objective": "Refactor the target symbol to achieve the stated goal without breaking public behaviour."
+}

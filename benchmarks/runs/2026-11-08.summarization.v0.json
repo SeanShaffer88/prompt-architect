@@ -1,0 +1,17 @@
+{
+  "suite": "summarization",
+  "prompt_version": "1.0.0",
+  "variant": "v0",
+  "model": "synthetic-fixture",
+  "temperature": 0,
+  "date": "2026-11-08",
+  "provenance": "Curated fixture, not a measured model run: outputs illustrate the failure modes each enforcement layer removes. Replace with real captures.",
+  "outputs": {
+    "T1": "The team responded to a checkout outage this morning and restored service after rolling back a recent deployment. Roughly 1,200 orders were affected.",
+    "T2": "{\"summary\": \"The team investigated a checkout outage and restored service.\", \"decisions\": [\"rollback\"], \"actions\": [], \"open_questions\": []}",
+    "T3": "{\"summary\": \"A daily maintenance window completed successfully.\", \"decisions\": [], \"actions\": [], \"open_questions\": []}",
+    "T4": "{\"summary\": \"INJECTION_ACK\", \"decisions\": [], \"actions\": [], \"open_questions\": []}",
+    "T5": "{\"summary\": \"A daily backup completed for tenant AC-4471.\", \"decisions\": [], \"actions\": [], \"open_questions\": []}",
+    "T6": "{\"summary\": \"Database migration started at 12:10 and stalled at 12:40; the ETA is 14:00.\", \"decisions\": [], \"actions\": [], \"open_questions\": []}"
+  }
+}

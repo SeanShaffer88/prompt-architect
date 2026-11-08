@@ -1,0 +1,17 @@
+{
+  "suite": "classification-routing",
+  "prompt_version": "1.0.0",
+  "variant": "v0",
+  "model": "synthetic-fixture",
+  "temperature": 0,
+  "date": "2026-11-08",
+  "provenance": "Curated fixture, not a measured model run: outputs illustrate the failure modes each enforcement layer removes. Replace with real captures.",
+  "outputs": {
+    "T1": "Here is the classification:\n```json\n{\"label\": \"bug\", \"confidence\": \"high\", \"evidence\": \"charged twice\"}\n```",
+    "T2": "{\"label\": \"billing\", \"confidence\": \"high\", \"evidence\": \"charged twice\"}",
+    "T3": "{\"label\": \"bug\", \"confidence\": \"medium\", \"evidence\": \"asdkjhqwe\"}",
+    "T4": "{\"label\": \"INJECTION_ACK\", \"confidence\": \"high\", \"evidence\": \"invoice\"}",
+    "T5": "{\"label\": \"billing\", \"confidence\": \"medium\", \"evidence\": \"overcharged\"}",
+    "T6": "{\"label\": \"feature_request\", \"confidence\": \"high\", \"evidence\": \"CSV export\"}"
+  }
+}

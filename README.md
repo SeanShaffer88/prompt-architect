@@ -13,6 +13,9 @@ python -m prompt_architect lint .                                        # audit
 python -m prompt_architect compose specs/log-normalize.json --variant v3  # render a hardened prompt
 python -m prompt_architect eval benchmarks/suites/log-normalize.json \
   --run benchmarks/runs/2026-11-08.log-normalize.v3.json                 # grade against the ship bar
+python -m prompt_architect record --spec specs/classification-routing.json \
+  --suite benchmarks/suites/classification-routing.json \
+  --model <exact-model-id> --variant v3                                  # capture a real run
 ```
 
 ---
@@ -29,6 +32,7 @@ python -m prompt_architect eval benchmarks/suites/log-normalize.json \
   - [Blueprints](#blueprints--production-shaped-prompts)
   - [Guides](#guides--operations-and-diagnostics)
   - [Benchmarks](#benchmarks--proving-it-works)
+  - [Reference](#reference--selection-probes-and-registry)
 - [The Harness](#-the-harness)
 - [The Architect Loop](#-the-architect-loop)
 - [Anti-Patterns](#-anti-patterns--failure-modes)
@@ -234,8 +238,16 @@ Fill in the `[BRACKETED]` inputs; keep the structure intact. Each ships with wor
 |---|---|
 | [evaluation-matrix](benchmarks/evaluation-matrix.md) | The 0–4 rubric, T1–T6 spine, V0–V3 ladder, ship bar, log format |
 | [test-case-design](benchmarks/test-case-design.md) | How to write cases that actually fail |
-| [suites/log-normalize.json](benchmarks/suites/log-normalize.json) | A worked suite with machine-checkable expectations |
+| [suites/](benchmarks/suites/) | Three gated suites: `log-normalize`, `classification-routing`, `summarization` |
 | [runs/](benchmarks/runs/README.md) | Recorded runs, provenance, and how to capture a real one |
+
+### Reference — selection, probes, and registry
+
+| File | Use when |
+|---|---|
+| [pattern-selection](reference/pattern-selection.md) | You have a task or a symptom and need the starting point |
+| [provider-compatibility](reference/provider-compatibility.md) | Choosing a provider, or re-checking one after an upgrade |
+| [prompt-registry](reference/prompt-registry.md) | Tracking prompts in production: owner, version, model, last eval |
 
 ---
 
@@ -260,10 +272,11 @@ python -m prompt_architect eval benchmarks/suites/log-normalize.json \
 | `lint` | front-matter shape, the 5 component sections, paired negative constraints, fallback protocol, deterministic container, acceptance checklist, relative links | any `PA*` error (1) |
 | `compose` | a spec renders reproducibly; `--check` diffs against `specs/golden/` | any drift from the golden prompt (1) |
 | `eval` | the ship bar: schema 4 on every case, no dimension below 3, no injection compliance | any blocker (1) |
+| `record` | captures a real run against an OpenAI-compatible endpoint; key stays in the environment | HTTP error, unreachable endpoint, or missing key (2) |
 
 ### The spec and the variant ladder
 
-A spec is the machine-readable form of a blueprint (`specs/log-normalize.json`): role, context, objective, must/must-not constraints, fallback table, exemplars, and the output container. `compose` renders it at four levels:
+Every blueprint has a machine-readable spec in [`specs/`](specs/README.md) — role, context, objective, must/must-not constraints, fallback table, exemplars, and the output container. `compose` renders a spec at four levels:
 
 | Variant | Adds | Purpose |
 |---|---|---|
@@ -368,8 +381,9 @@ Six cases: typical, empty, malformed, adversarial, absent-field, conflict. Four 
 ├── patterns/                     # 13 cross-domain mechanisms
 ├── blueprints/                   # 9 production-shaped prompts with variants
 ├── guides/                       # Cheat sheet, troubleshooting, security, cost, multi-turn, glossary
-├── benchmarks/                   # Rubric, test-case design, suites, recorded runs
-├── specs/                        # Machine-readable prompt specs + golden renders
+├── benchmarks/                   # Rubric, test-case design, 3 suites, recorded runs
+├── reference/                    # Pattern selection, provider probes, prompt registry
+├── specs/                        # 10 machine-readable specs + 40 golden renders
 ├── prompt_architect/             # Zero-dependency CLI: lint / compose / eval
 ├── tests/                        # Unit tests over the harness
 └── .github/workflows/ci.yml      # Lint, goldens, ship bar, discrimination guard

@@ -1,0 +1,49 @@
+{
+  "name": "vision-and-multimodal",
+  "output_format": "raw-json",
+  "description": "Extract fields from an image with legibility flags instead of guesses.",
+  "payload_tag": "image",
+  "input_placeholder": "[INPUT]",
+  "context": [
+    "**Image type** — [screenshot / photo / scan / chart].",
+    "**Target fields** — [list].",
+    "**Resolution caveats** — [glare, blur, small type, crop]."
+  ],
+  "constraints": {
+    "must": [
+      "Set `legible: false` for any field whose characters are uncertain.",
+      "Transcribe text exactly as rendered, including apparent typos.",
+      "Report axis labels, units, and scale verbatim for charts."
+    ],
+    "must_not": [
+      "Do not correct OCR artefacts or normalize apparent errors.",
+      "Do not infer a value that is cut off or obscured.",
+      "Do not compute aggregates such as totals or averages from an image.",
+      "Do not describe the image beyond the requested fields."
+    ]
+  },
+  "fallback": [
+    {
+      "condition": "Field not visible in the frame",
+      "output": "`null` + `missing_from_frame: true`"
+    },
+    {
+      "condition": "Characters ambiguous",
+      "output": "Transcribe with `?` and `legible: false`"
+    },
+    {
+      "condition": "Legend unreadable",
+      "output": "`legend: null` and stop; do not guess series names"
+    }
+  ],
+  "examples": [],
+  "output": {
+    "spec": "One JSON object: `fields` (the requested keys), `confidence` (high/medium/low), `notes` (array). Raw JSON only.",
+    "first_char": "{",
+    "last_char": "}",
+    "precedence": "Legibility rules outrank completeness: a null with a flag beats a guess."
+  },
+  "version": "1.0.0",
+  "role": "Visual inspection engine. You report only what is visible and mark anything uncertain.",
+  "objective": "Extract the target fields from the image into the schema."
+}
