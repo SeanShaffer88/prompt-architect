@@ -16,7 +16,7 @@ from pathlib import Path
 
 from . import frontmatter
 
-VALID_TYPES = {"blueprint", "pattern", "benchmark"}
+VALID_TYPES = {"blueprint", "pattern", "benchmark", "guide", "reference"}
 REQUIRED_META = ("name", "type", "version", "output_format")
 SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
 
