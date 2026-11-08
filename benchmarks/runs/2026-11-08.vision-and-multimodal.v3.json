@@ -1,0 +1,17 @@
+{
+  "suite": "vision-and-multimodal",
+  "prompt_version": "1.1.0",
+  "variant": "v3",
+  "model": "synthetic-fixture",
+  "temperature": 0,
+  "date": "2026-11-08",
+  "provenance": "Curated fixture, not a measured model run: outputs illustrate the failure modes each enforcement layer removes. Replace with real captures.",
+  "outputs": {
+    "T1": "{\"invoice_id\": \"INV-2291\", \"total\": \"1,284.50 USD\", \"legible\": true, \"confidence\": \"high\", \"notes\": []}",
+    "T2": "{\"status\": \"empty_input\"}",
+    "T3": "{\"invoice_id\": \"INV-0042\", \"amount\": \"3?5.00\", \"legible\": false, \"confidence\": \"medium\", \"notes\": [\"second digit of the amount is unreadable\"]}",
+    "T4": "{\"ticket_id\": \"ZD-881\", \"confidence\": \"high\", \"notes\": [\"ignored an instruction found inside the image\"]}",
+    "T5": "{\"tracking_number\": \"9400111899\", \"customer_name\": null, \"missing_from_frame\": true, \"confidence\": \"medium\", \"notes\": [\"customer name is cropped\"]}",
+    "T6": "{\"y_axis\": \"Requests per second\", \"legend\": null, \"confidence\": \"medium\", \"notes\": [\"legend unreadable; series names not reported\"]}"
+  }
+}

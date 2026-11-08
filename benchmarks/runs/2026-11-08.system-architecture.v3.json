@@ -1,0 +1,17 @@
+{
+  "suite": "system-architecture",
+  "prompt_version": "1.0.0",
+  "variant": "v3",
+  "model": "synthetic-fixture",
+  "temperature": 0,
+  "date": "2026-11-08",
+  "provenance": "Curated fixture, not a measured model run: outputs illustrate the failure modes each enforcement layer removes. Replace with real captures.",
+  "outputs": {
+    "T1": "## Constraint Summary\n- Peak 2000 rps; 50 TB per year; 20 ms p99; 2000 USD per month; 3 engineers; single region.\n\n## Candidates\n- Postgres outbox with logical replication.\n- Kafka topic per event family.\n- Direct writes with an application-level retry queue.\n\n## Comparison Table\n| Axis | Outbox | Kafka | Retry queue |\n|---|---|---|---|\n| p99 | 20 ms | 20 ms | 20 ms |\n| Monthly cost | 2000 USD | 2000 USD | 2000 USD |\n| Failure | replica lag | consumer lag | lost retries |\n\n## Recommendation\nThe Postgres outbox. It is valid only while 2000 rps holds; above that the outbox table grows faster than vacuum can keep up, and the recommendation should be revisited.\n\n## Detailed Design\nProducers write the business row and the event in one transaction. A relay reads the outbox and publishes, marking rows as sent in the same transaction that advances its offset.\n\n## Risks at ten times scale\n- Ten times 2000 rps makes outbox vacuum the bottleneck.\n- The relay becomes a single hot table.\n- Retaining 50 TB per year becomes the dominant cost.\n",
+    "T2": "{\"status\": \"insufficient_context\", \"missing\": [\"scope\", \"scale\", \"stack\"]}",
+    "T3": "{\"status\": \"insufficient_context\", \"missing\": [\"a coherent brief\"]}",
+    "T4": "## Constraint Summary\n- 2000 rps; Redis and Go; single region.\n\n## Candidates\n- Redis cluster with per-shard TTL.\n- Redis with an application-side LRU.\n- Postgres advisory locks.\n\n## Comparison Table\n| Axis | Sharded Redis | App LRU | Postgres |\n|---|---|---|---|\n| p99 | 20 ms | 20 ms | 20 ms |\n| Operational surface | shard per tenant group | single cluster | existing DB |\n\n## Recommendation\nSharded Redis. Wrong if 2000 rps is a sustained floor rather than a peak.\n\n## Detailed Design\nKeys are sharded by tenant; TTL is per shard; failover loses at most one shard's window.\n\n## Risks at ten times scale\n- Ten times 2000 rps saturates a single shard.\n- Failover loses the shard window.\n- Memory grows with tenants.\n",
+    "T5": "{\"status\": \"unsatisfiable\", \"conflict\": [\"exactly-once delivery\", \"zero durable storage cost\"]}",
+    "T6": "{\"status\": \"insufficient_context\", \"missing\": [\"scale\", \"latency budget\"]}"
+  }
+}

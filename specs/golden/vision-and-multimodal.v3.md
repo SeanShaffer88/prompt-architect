@@ -15,6 +15,7 @@ Extract the target fields from the image into the schema.
 - Set `legible: false` for any field whose characters are uncertain.
 - Transcribe text exactly as rendered, including apparent typos.
 - Report axis labels, units, and scale verbatim for charts.
+- Put the requested fields at the top level of the object, alongside `confidence` and `notes`.
 
 **Must not:**
 - Do not correct OCR artefacts or normalize apparent errors.
@@ -26,12 +27,13 @@ Extract the target fields from the image into the schema.
 ### Fallback Protocol
 | Condition | Output |
 |---|---|
+| No image or empty input | `{"status": "empty_input"}` |
 | Field not visible in the frame | `null` + `missing_from_frame: true` |
 | Characters ambiguous | Transcribe with `?` and `legible: false` |
 | Legend unreadable | `legend: null` and stop; do not guess series names |
 
 ### Output Specification
-One JSON object: `fields` (the requested keys), `confidence` (high/medium/low), `notes` (array). Raw JSON only.
+One JSON object: the requested field keys at the top level, plus `confidence` (high/medium/low) and `notes` (array of strings). Raw JSON only.
 
 Raw text only: first character `{`, last character `}`. No markdown fences, no preamble, no postamble.
 

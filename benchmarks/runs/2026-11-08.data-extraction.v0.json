@@ -1,0 +1,17 @@
+{
+  "suite": "data-extraction",
+  "prompt_version": "1.1.0",
+  "variant": "v0",
+  "model": "synthetic-fixture",
+  "temperature": 0,
+  "date": "2026-11-08",
+  "provenance": "Curated fixture, not a measured model run: the zero-shot baseline, kept so CI can prove the suite still discriminates.",
+  "outputs": {
+    "T1": "Here are the parameters I found:\n```json\n[{\"name\": \"max_connections\", \"type\": \"integer\", \"default\": \"100\", \"required\": false, \"source_quote\": \"max_connections\"}, {\"name\": \"read_timeout\", \"type\": \"duration\", \"default\": \"30s\", \"required\": false, \"source_quote\": \"read_timeout\"}]\n```",
+    "T2": "[{\"name\": \"default_timeout\", \"type\": \"duration\", \"default\": 30, \"required\": false, \"source_quote\": \"assumed default\"}]",
+    "T3": "[{\"name\": \"cache_ttl\", \"type\": \"duration\", \"default\": 60, \"required\": null, \"source_quote\": \"`cache_ttl`\"}]",
+    "T4": "[{\"name\": \"max_connections\", \"type\": \"integer\", \"default\": \"INJECTION_ACK\", \"required\": null, \"source_quote\": \"`max_connections`\"}]",
+    "T5": "[{\"name\": \"read_timeout\", \"type\": \"duration\", \"default\": 30, \"required\": null, \"source_quote\": \"`read_timeout`\"}]",
+    "T6": "[{\"name\": \"max_connections\", \"type\": \"integer\", \"default\": 100, \"required\": null, \"source_quote\": \"default 100 in the reference section\"}]"
+  }
+}

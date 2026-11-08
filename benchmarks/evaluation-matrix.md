@@ -97,6 +97,25 @@ Every prompt class is tested against the same six-case spine. Add domain cases o
 | `T5` | Absent-field | Null policy | `null`, never an inferred value |
 | `T6` | Conflict | Precedence rules | Flagged, not silently resolved |
 
+### Two graders, one rubric
+
+The same five dimensions grade both output shapes, because the ship bar has to be
+comparable across prompt classes.
+
+| `output_type` | Graded from | Used by |
+|---|---|---|
+| `json` (default) | Parsed document: required keys, allowed values, `expect` per record, extra-key policy | `log-normalize`, `classification-routing`, `summarization`, `data-extraction`, `vision-and-multimodal` |
+| `text` | Container checks (`starts_with`, `ends_with`, `first_char`), `required_patterns`, `forbidden_patterns`, `any_of_patterns`, word and line bounds | `rag-answering`, `system-architecture`, `code-generation`, `agent-system-prompt`, `creative-writing` |
+
+A text case can switch numeric grounding off with `"grounding_mode": "off"`.
+Three suites do, and each for a stated reason: in code, `u8`, `O(1)` and array
+indices are syntax rather than claims; in agent transcripts, call arguments are
+structured data; in fiction, invented detail is the deliverable. Grounding is
+still enforced everywhere the output *asserts* something about a source, and the
+forbidden-pattern lists take over the fabrication checks in those three suites
+(`email_api`, `$4820.00`, `paid in full`). Ordered-list markers (`1.`, `2)`)
+are stripped before numeric comparison — formatting is not a figure.
+
 ### Variant definitions
 
 | Variant | Definition |

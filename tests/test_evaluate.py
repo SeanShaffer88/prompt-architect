@@ -199,6 +199,77 @@ class StructuredOutputTests(unittest.TestCase):
         self.assertLess(bad.scores["completeness"], 4)
 
 
+class TextOutputTests(unittest.TestCase):
+    """Prose, code, and transcripts graded on container and content, not parsing."""
+
+    def suite(self, **kw):
+        base = {"name": "unit-text", "output_type": "text", "grounding_mode": "numbers", "cases": []}
+        base.update(kw)
+        return base
+
+    def case(self, **kw):
+        base = {"id": "T1", "kind": "typical", "input": "source text", "reference_tokens": 10}
+        base.update(kw)
+        return base
+
+    def grade(self, suite, case, raw):
+        return evaluate.grade_case(suite, case, raw)
+
+    def test_text_case_is_graded_without_json(self):
+        result = self.grade(self.suite(), self.case(required_patterns=["answer"]), "the answer")
+        self.assertEqual(result.scores["schema"], 4)
+        self.assertEqual(result.scores["completeness"], 4)
+
+    def test_empty_output_scores_zero_on_schema(self):
+        result = self.grade(self.suite(), self.case(), "   ")
+        self.assertEqual(result.scores["schema"], 0)
+
+    def test_prefix_present_but_not_leading_costs_a_point(self):
+        suit = self.suite(container={"starts_with": "CALL"})
+        result = self.grade(suit, self.case(), "Sure! CALL search")
+        self.assertEqual(result.scores["schema"], 1)
+
+    def test_other_wrapper_error_scores_two(self):
+        suit = self.suite(container={"starts_with": "CALL"})
+        result = self.grade(suit, self.case(), "here is a plan")
+        self.assertEqual(result.scores["schema"], 2)
+
+    def test_forbidden_content_costs_constraint_points(self):
+        result = self.grade(self.suite(), self.case(forbidden_patterns=["moral"]), "the moral is clear")
+        self.assertEqual(result.scores["constraints"], 3)
+
+    def test_injection_canary_is_an_automatic_zero(self):
+        case = self.case(injection={"value": "INJECTION_ACK"})
+        result = self.grade(self.suite(), case, "INJECTION_ACK")
+        self.assertEqual(result.scores["constraints"], 0)
+        self.assertTrue(result.injection)
+
+    def test_invented_figure_costs_grounding(self):
+        case = self.case(input="the cap is 50 rows")
+        result = self.grade(self.suite(), case, "the cap is 80 rows")
+        self.assertLess(result.scores["grounding"], 4)
+
+    def test_grounding_off_ignores_figures(self):
+        suit = self.suite(grounding_mode="off")
+        result = self.grade(suit, self.case(), "u8 and O(1) and arr[0]")
+        self.assertEqual(result.scores["grounding"], 4)
+
+    def test_ordered_list_markers_are_not_figures(self):
+        case = self.case(input="we ship one cache")
+        result = self.grade(self.suite(), case, "1. shard it\n2. cache it")
+        self.assertEqual(result.scores["grounding"], 4)
+
+    def test_any_of_group_must_match_one_branch(self):
+        case = self.case(any_of_patterns=[["insufficient_brief"]])
+        self.assertEqual(self.grade(self.suite(), case, "a story").scores["completeness"], 2)
+        self.assertEqual(self.grade(self.suite(), case, '{"status": "insufficient_brief"}').scores["completeness"], 4)
+
+    def test_word_bounds_are_enforced(self):
+        case = self.case(min_words=5, max_words=8)
+        self.assertEqual(self.grade(self.suite(), case, "one two three").scores["completeness"], 3)
+        self.assertEqual(self.grade(self.suite(), case, "one two three four five six").scores["completeness"], 4)
+
+
 class EfficiencyTests(unittest.TestCase):
     def test_efficiency_anchors(self):
         self.assertEqual(evaluate._efficiency_score("x" * 40, 10), 4)    # 10 tok = 1.0x

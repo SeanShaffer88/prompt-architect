@@ -238,7 +238,7 @@ Fill in the `[BRACKETED]` inputs; keep the structure intact. Each ships with wor
 |---|---|
 | [evaluation-matrix](benchmarks/evaluation-matrix.md) | The 0–4 rubric, T1–T6 spine, V0–V3 ladder, ship bar, log format |
 | [test-case-design](benchmarks/test-case-design.md) | How to write cases that actually fail |
-| [suites/](benchmarks/suites/) | Three gated suites: `log-normalize`, `classification-routing`, `summarization` |
+| [suites/](benchmarks/suites/) | Ten gated suites — one per spec — each run at V0 (must fail) and V3 (must pass) in CI |
 | [runs/](benchmarks/runs/README.md) | Recorded runs, provenance, and how to capture a real one |
 
 ### Reference — selection, probes, and registry
@@ -271,7 +271,7 @@ python -m prompt_architect eval benchmarks/suites/log-normalize.json \
 |---|---|---|
 | `lint` | front-matter shape, the 5 component sections, paired negative constraints, fallback protocol, deterministic container, acceptance checklist, relative links | any `PA*` error (1) |
 | `compose` | a spec renders reproducibly; `--check` diffs against `specs/golden/` | any drift from the golden prompt (1) |
-| `eval` | the ship bar: schema 4 on every case, no dimension below 3, no injection compliance | any blocker (1) |
+| `eval` | the ship bar on JSON or text output — schema 4 on every case, no dimension below 3, no injection compliance | any blocker (1) |
 | `record` | captures a real run against an OpenAI-compatible endpoint; key stays in the environment | HTTP error, unreachable endpoint, or missing key (2) |
 
 ### The spec and the variant ladder
@@ -381,7 +381,7 @@ Six cases: typical, empty, malformed, adversarial, absent-field, conflict. Four 
 ├── patterns/                     # 13 cross-domain mechanisms
 ├── blueprints/                   # 9 production-shaped prompts with variants
 ├── guides/                       # Cheat sheet, troubleshooting, security, cost, multi-turn, glossary
-├── benchmarks/                   # Rubric, test-case design, 3 suites, recorded runs
+├── benchmarks/                   # Rubric, test-case design, 10 suites, recorded runs
 ├── reference/                    # Pattern selection, provider probes, prompt registry
 ├── specs/                        # 10 machine-readable specs + 40 golden renders
 ├── prompt_architect/             # Zero-dependency CLI: lint / compose / eval

@@ -54,16 +54,18 @@ Changing a spec changes all four renders, which is why the goldens are committed
 | [log-normalize](log-normalize.json) | worked example | ✅ `log-normalize` |
 | [classification-routing](classification-routing.json) | [blueprints/classification-routing.md](../blueprints/classification-routing.md) | ✅ `classification-routing` |
 | [summarization](summarization.json) | [blueprints/summarization.md](../blueprints/summarization.md) | ✅ `summarization` |
-| [data-extraction](data-extraction.json) | [blueprints/data-extraction.md](../blueprints/data-extraction.md) | — |
-| [code-generation](code-generation.json) | [blueprints/code-generation.md](../blueprints/code-generation.md) | — |
-| [rag-answering](rag-answering.json) | [blueprints/rag-answering.md](../blueprints/rag-answering.md) | — |
-| [system-architecture](system-architecture.json) | [blueprints/system-architecture.md](../blueprints/system-architecture.md) | — |
-| [agent-system-prompt](agent-system-prompt.json) | [blueprints/agent-system-prompt.md](../blueprints/agent-system-prompt.md) | — |
-| [creative-writing](creative-writing.json) | [blueprints/creative-writing.md](../blueprints/creative-writing.md) | — |
-| [vision-and-multimodal](vision-and-multimodal.json) | [blueprints/vision-and-multimodal.md](../blueprints/vision-and-multimodal.md) | — |
+| [data-extraction](data-extraction.json) | [blueprints/data-extraction.md](../blueprints/data-extraction.md) | ✅ `data-extraction` |
+| [code-generation](code-generation.json) | [blueprints/code-generation.md](../blueprints/code-generation.md) | ✅ `code-generation` |
+| [rag-answering](rag-answering.json) | [blueprints/rag-answering.md](../blueprints/rag-answering.md) | ✅ `rag-answering` |
+| [system-architecture](system-architecture.json) | [blueprints/system-architecture.md](../blueprints/system-architecture.md) | ✅ `system-architecture` |
+| [agent-system-prompt](agent-system-prompt.json) | [blueprints/agent-system-prompt.md](../blueprints/agent-system-prompt.md) | ✅ `agent-system-prompt` |
+| [creative-writing](creative-writing.json) | [blueprints/creative-writing.md](../blueprints/creative-writing.md) | ✅ `creative-writing` |
+| [vision-and-multimodal](vision-and-multimodal.json) | [blueprints/vision-and-multimodal.md](../blueprints/vision-and-multimodal.md) | ✅ `vision-and-multimodal` |
 
-A spec without a suite is compose-able and version-controlled, but its behavior
-is not gated in CI. Adding a suite is the next step for those rows.
+Every spec is gated: `benchmarks/suites/<name>.json` runs the T1–T6 spine and CI
+fails if the hardened (`v3`) fixture stops clearing the ship bar, or if the
+zero-shot (`v0`) fixture starts clearing it. A new spec is not finished until it
+has both fixtures.
 
 ## Workflow
 

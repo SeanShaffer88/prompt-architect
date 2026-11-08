@@ -17,6 +17,8 @@ Extract every configuration parameter into the target schema, preserving traceab
 - Copy `source_quote` verbatim from the document; if no supporting sentence exists, the value must be null.
 - Normalize durations to seconds and sizes to MB, as integers.
 - Emit only the keys name, type, default, required, source_quote.
+- If one parameter states two different defaults, set `default` to null, `conflict` to true, and put both quotes in `source_quote` separated by ` | `.
+- Set `type` to "unknown" when the document does not state the type.
 
 **Must not:**
 - Do not infer a default from naming conventions or from a sibling parameter.
@@ -38,9 +40,10 @@ Output: [{"name": "max_connections", "type": "integer", "default": 100, "require
 | Document empty | `{"status": "empty_input", "parameters": []}` |
 | Document unparseable | `{"status": "unparseable", "raw": "<first 120 chars>"}` |
 | Parameter present but default unstated | `default: null` |
+| Two different defaults for one parameter | `default: null` + `conflict: true` + both quotes |
 
 ### Output Specification
-A JSON array of parameter objects. Keys in order: name, type, default, required, source_quote. Raw JSON only, no fences.
+A JSON array of parameter objects. Keys in order: name, type, default, required, source_quote; add conflict only when it is true. Raw JSON only, no fences.
 
 Raw text only: first character `[`, last character `]`. No markdown fences, no preamble, no postamble.
 
