@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prompt-architect"
+version = "0.1.0"
+description = "Compose, lint, and evaluate deterministic prompts built on the 5-component architecture."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Prompt Architect contributors" }]
+dependencies = []
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.scripts]
+prompt-architect = "prompt_architect.cli:main"
+
+[tool.setuptools]
+packages = ["prompt_architect"]

@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # Zero third-party dependencies: nothing to install, nothing to pin.
+      - name: Unit tests
+        run: python -m unittest discover -s tests -t . -v
+
+      - name: Lint the specification set
+        run: python -m prompt_architect lint .
+
+      - name: Golden prompts are reproducible
+        run: |
+          for variant in v0 v1 v2 v3; do
+            python -m prompt_architect compose specs/log-normalize.json \
+              --variant "$variant" --check
+          done
+
+      - name: Hardened prompt meets the ship bar
+        run: >
+          python -m prompt_architect eval
+          benchmarks/suites/log-normalize.json
+          --run benchmarks/runs/2026-11-08.log-normalize.v3.json
+          --expect-pass
+
+      # The suite must still be able to fail: a harness that passes everything
+      # measures nothing. V0 is the zero-shot baseline and must miss the bar.
+      - name: Suite still discriminates
+        run: >
+          python -m prompt_architect eval
+          benchmarks/suites/log-normalize.json
+          --run benchmarks/runs/2026-11-08.log-normalize.v0.json
+          --expect-fail

@@ -2,7 +2,7 @@
 name: constraint-enforcement
 type: pattern
 version: 1.0.0
-inputs: [objective, forbidden_behaviors, payload, output_schema]
+inputs: [objective, negative_rules, payload, output_schema]
 output_format: strict
 related: [few-shot-calibration, chain-of-thought]
 ---
